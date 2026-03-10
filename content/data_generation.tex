@@ -61,18 +61,18 @@ In the end, we did not use REMD for the final data generation, as the computatio
 \subsection{Datasets}
 \label{subsec:production_datasets}
 
-the Data for this paper was generated using the parameters of table \ref{tab:production_datasets}
+The data for this paper was generated using the parameters detailed in Table~\ref{tab:production_datasets}. For all datasets, the temperature was maintained at 300\,K, with a padding of 1.2\,nm, both NPT and NVT equilibration phases lasted 100\,ns, and 2,000,000 frames were generated.
 
 \begin{table*}[htbp]
     \centering
-    \begin{tabular}{l c c r r r r r}
+    \begin{tabular}{l r r}
         \toprule
-        \textbf{Dataset} & \textbf{Temp.} & \textbf{Padding} & \textbf{NPT Eq.} & \textbf{NVT Eq.} & \textbf{Peptides} & \textbf{Sim. Time} & \textbf{Frames} \\
+        \textbf{Dataset} & \textbf{Number of Peptides} & \textbf{Simulation Time} \\
         \midrule
-        Dipeptides (Train) & 300\,K & 1.2\,nm & 100\,ns & 100\,ns & 280 & 1\,\textmu s & 2,000,000 \\
-        Dipeptides (Test) & 300\,K & 1.2\,nm & 100\,ns & 100\,ns & 120 & 1\,\textmu s & 2,000,000 \\
-        Tetrapeptides (Train) & 300\,K & 1.2\,nm & 100\,ns & 100\,ns & 1,500 & 500\,ns & 2,000,000 \\
-        Tetrapeptides (Test) & 300\,K & 1.2\,nm & 100\,ns & 100\,ns & 30 & 5\,\textmu s & 2,000,000 \\
+        Dipeptides (Train) & 280 & 1\,\textmu s \\
+        Dipeptides (Test) & 120 & 1\,\textmu s \\
+        Tetrapeptides (Train) & 1,500 & 500\,ns \\
+        Tetrapeptides (Test) & 30 & 5\,\textmu s \\
         \bottomrule
     \end{tabular}
     \caption{Overview of simulation parameters, phase durations, and sequence composition across all primary dataset partitions.}
