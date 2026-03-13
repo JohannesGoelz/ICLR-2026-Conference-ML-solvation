@@ -2,31 +2,42 @@
 \section{Introduction}
 \label{sec:introduction}
 
-\begin{comment}
-Draft:
-- Motivation for the subject
-- Why current methods are not sufficient
-- Image of molecule in waterbox
-- Sota
-- Transferability
-- Image of transferability
-- Our scope
-- The goal
-\end{comment}
+
 
 % Motivation
-Understanding molecular behavior at the atomistic scale is essential for applications such as drug discovery and materials design. Designing a molecule for a specific function, for example, binding to a target protein or maximizing light absorption in photovoltaic devices, requires knowledge of how that molecule adopts different conformations in its target environment \citep{de2016role, jorgensen2004many, hachmann2011harvard, scharber2006design}. This, in turn, necessitates sampling from the Boltzmann distribution, which quantifies the probability of observing a given molecular conformation \citep{karplus2002molecular, hollingsworth2018molecular}.
+Understanding molecular behavior at the atomistic scale is essential for applications such as drug discovery and materials design. Designing a molecule for a specific function, for example, binding to a target protein or maximizing light absorption in photovoltaic devices, requires knowledge of how that molecule adopts different conformations in its target environment \citep{de2016role, jorgensen2004many, hachmann2011harvard, scharber2006design}. 
+
+
+
+
+This, in turn, necessitates sampling from the Boltzmann distribution, where the probability of observing a configuration $x \in \mathcal{X}$ is proportional to $\tilde{p}_X(x) = \exp\left(\frac{-E(x)}{k_B T}\right)$, with $E(x)$ the potential energy, $T$ the temperature, and $k_B$ the Boltzmann constant \citep{schopmans2026efficient}. The normalized distribution $p_X(x) = \tilde{p}_X(x)/Z$ involves the partition function $Z$, which is generally unknown and intractable. A classical approach to sampling from this distribution is \gls{md}, which propagates atomic positions through time according to Newton's equations of motion, thereby generating configurations distributed according to the Boltzmann distribution \citep{karplus2002molecular, hollingsworth2018molecular}.
+
 
 % Drawbacks of current methods
 In this context, solvent effects play a decisive role. In biomolecular systems, for instance, water is the predominant medium and strongly influences conformational sampling through hydrogen bonding, dielectric screening, and hydrophobic interactions. More generally, the inclusion of solvents can yield Boltzmann distributions that differ from those obtained in vacuum settings, underscoring the importance of accurately accounting for solvation effects across diverse domains. 
 
-However, simulating a single target molecule, such as a drug candidate, in an explicit water box containing thousands of solvent molecules comes with high computational cost \citep{roux1999implicit, feig2004performance}. Classical implicit solvent models, such as the \gls{gb} approximation, mitigate this by eliminating explicit solvent degrees of freedom \citep{still1990semianalytical, Onufriev2019-yz}. While computationally efficient, these models often sacrifice accuracy relative to fully atomistic systems.
-
+However, simulating a single target molecule, such as a drug candidate, in an explicit water box containing thousands of solvent molecules (Figure \ref{fig:solvated_alanine}) comes with high computational cost \citep{roux1999implicit, feig2004performance}. Classical implicit solvent models, such as the \gls{gb} approximation, mitigate this by eliminating explicit solvent degrees of freedom \citep{still1990semianalytical, Onufriev2019-yz}. While computationally efficient, these models often sacrifice accuracy relative to fully atomistic systems.
 
 \begin{figure}
     \centering
     \includegraphics[width=0.5\linewidth]{images/solvated_alanine.png}
-    \caption{Alanine dipeptide (22 atoms) solvated in an explicit water environment. The cubic simulation box has a side length of 2,nm and contains 696 solvent atoms, demonstrating the disproportionately high number of solvent degrees of freedom that drive up the computational cost of fully atomistic simulations}
+    \caption{Alanine dipeptide (22 atoms) solvated in an explicit water environment. The cubic simulation box has a padding of 2,nm and contains 696 solvent atoms, demonstrating the disproportionately high number of solvent degrees of freedom that drive up the computational cost of fully atomistic simulations}
     \label{fig:solvated_alanine}
 \end{figure}
 
+
+% contribution
+
+To address this limitation, we introduce a machine learning based approach that learns the effect of explicit solvation on molecular forces. The model builds on SchNet \citep{schutt2018schnet} and is trained via force matching on trajectories generated in explicit solvent using classical force fields. During data generation, atomic forces are recorded at each simulation step, and the model is subsequently trained via supervised learning on these force trajectories. A closely related approach was proposed by \citet{machine_learning_implicit_solvation} for the alanine dipeptide system. We extend this line of work to a broader set of peptides and show a systematic evaluation of relevant model design choices.
+
+We summarize our contributions as follows:
+
+\begin{itemize}
+    \item We generate a dataset of force trajectories for dipeptides and
+    tetrapeptides, each including an extended equilibration phase and a large
+    number of recorded samples per trajectory.
+    \item We train a \gls{ml} model based on a \gls{gnn} on the dipeptide 
+    dataset and evaluate the impact of key design choices, including the choice 
+    of atomic embeddings and the effect of training set trajectory length on 
+    model performance.
+\end{itemize}
