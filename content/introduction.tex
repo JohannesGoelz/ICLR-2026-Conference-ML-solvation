@@ -30,10 +30,3 @@ However, simulating a single target molecule, such as a drug candidate, in an ex
     \label{fig:solvated_alanine}
 \end{figure}
 
-
-% Related Work 
-To overcome the limitations of classical implicit models, recent developments have leveraged \gls{ml} to refine implicit solvation. \citet{machine_learning_implicit_solvation} were the first to apply \gls{ml} to this domain, employing a \gls{gnn} trained with a force-matching objective to learn solvent effects from explicit solvent simulation data. While their method achieved lower \gls{kl} divergence on molecules like chignolin and alanine dipeptide compared to the baseline \gls{gb} model, its transferability across different systems remained untested.
-
-Subsequent approaches have focused on improving generalization and accuracy. One strategy is delta learning \cite{katzberger2024general, katzberger2025rapid}, which trains a \gls{nn} to predict the difference between implicit and explicit solvent results, modifying parameters within a \gls{gb} baseline while preserving computational efficiency. While successful in reproducing free-energy profiles of small organic molecules, this model has not been validated on larger molecules exceeding 700 Da. Another approach, potential contrasting \cite{Airas2023}, refines a pretrained SchNet potential without labeled force data by discriminating between realistic and noise-like conformations. Although it outperformed the \gls{gb} baseline on training proteins, its transferability to mutations with lower sequence identity and intrinsically disordered peptides proved limited. Furthermore, \citet{röcken2025predictingsolvationfreeenergies} introduced ReSolv, which combines vacuum pre-training on \gls{qm} data with solvent refinement for small, drug-like molecules.
-
-In this work we aim to develop a ml-based implicit solvation model for small peptides. This includes a data pipeline to efficiently generate force trajectories of amino acid sequences as well as a Graph Neural Network which is trained and tested on this data.

@@ -1,10 +1,20 @@
 \section{Experiments}
-The training and evaulation of the models was performed on the dataset that we generated, comprising of the full combinaorical space of dipepties yielding 400 moleucles build of the 20 base aminoacids. To this end we 
 
 \subsection{Experimental Setup}
+
+\textbf{Dataset}
+
+The datasets utilized for training in this study are constructed as follows. First, we separate a test set comprising 20\% of the total 400 dipeptides; these unseen systems are strictly withheld during training. For the remaining 80\% of the dipeptide trajectories—each containing 2 million frames in their raw format—we partition the data chronologically. The latter half of each trajectory serves as a validation set to evaluate the model's in-distribution generalization, while the former half is used to train the main model. We postulate that this trajectory length is sufficient to provide a robust approximation of the Boltzmann distribution for dipeptides (cite this claim eg issnet paper had 1million frames). 
+
+\textbf{Metrics}
+
+To 
+
 
 \subsection{Model Complexity Ablation}
 
 \subsection{Feature Embedding Ablation}
 
 \subsection{Train Trajectory Length Ablation}
+
+To ablate the effect of trajectory length on model performance, we slice the first $n$ samples of the trajectory. Because the trajectories were logged sequentially during simulation, this approach accurately simulates shorter physical trajectory lengths. To mitigate the confounding variable of dataset size—where longer trajectories inherently contain more training samples—we subsample each slice to match the frame count of the shortest trajectory length under investigation. This isolates the ablation to assess the quality of the thermodynamic sampling, as subsampling a longer, more decorrelated trajectory yields better statistical convergence with respect to the underlying Boltzmann distribution. This is further detailed in the discussion (todo ref this later).

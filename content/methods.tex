@@ -15,8 +15,6 @@ These structures are subsequently solvated in a TIP3P explicit water box using O
 
 
 
-
-
 \subsection{Datasets}
 \label{subsec:production_datasets}
 
@@ -57,10 +55,6 @@ To facilitate efficient hyperparameter optimization and feature space exploratio
 
 Furthermore, to circumvent the computationally expensive process of regenerating the entire dataset when incorporating new descriptors, the data pipeline is designed to support the dynamic injection of atomistic features. This architecture allows novel features to be seamlessly appended to existing datasets with minimal computational overhead. The injection mechanism is natively coupled to the extraction methods defined within the feature registry; consequently, registering a new feature automatically provisions the necessary routines to extract, inject, and immediately initiate training on the augmented dataset.
 
-\subsection{Dataset Creation}
-The datasets utilized for training in this study are constructed as follows. First, we separate a test set comprising 20\% of the total 400 dipeptides; these unseen systems are strictly withheld during training. For the remaining 80\% of the dipeptide trajectories—each containing 2 million frames in their raw format—we partition the data chronologically. The latter half of each trajectory serves as a validation set to evaluate the model's in-distribution generalization, while the former half is used to train the main model. We postulate that this trajectory length is sufficient to provide a robust approximation of the Boltzmann distribution for dipeptides (cite this claim eg issnet paper had 1million frames).
-
-To ablate the effect of trajectory length on model performance, we slice the first $n$ samples of the trajectory. Because the trajectories were logged sequentially during simulation, this approach accurately simulates shorter physical trajectory lengths. To mitigate the confounding variable of dataset size—where longer trajectories inherently contain more training samples—we subsample each slice to match the frame count of the shortest trajectory length under investigation. This isolates the ablation to assess the quality of the thermodynamic sampling, as subsampling a longer, more decorrelated trajectory yields better statistical convergence with respect to the underlying Boltzmann distribution. This is further detailed in the discussion (todo ref this later).
 
 \subsection{Dataset Orchestration During Training}
 Training on massive molecular datasets presents significant memory constraints, as the data typically exceeds available RAM. Consequently, a sophisticated data-loading pipeline is required to prevent GPU starvation while ensuring sufficient data shuffling to mitigate catastrophic forgetting during sequential epoch iterations (todo cite this). We explored numerous data-loading strategies; approaches that were ultimately deemed unsuitable for this training pipeline are documented in Appendix (todo add link). A critical challenge in this context is concurrent dataset access by multiple GPUs, which can precipitate severe disk I/O bottlenecks if not carefully managed.
