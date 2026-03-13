@@ -20,7 +20,7 @@ Understanding molecular behavior at the atomistic scale is essential for applica
 % Drawbacks of current methods
 In this context, solvent effects play a decisive role. In biomolecular systems, for instance, water is the predominant medium and strongly influences conformational sampling through hydrogen bonding, dielectric screening, and hydrophobic interactions. More generally, the inclusion of solvents can yield Boltzmann distributions that differ from those obtained in vacuum settings, underscoring the importance of accurately accounting for solvation effects across diverse domains. 
 
-However, simulating a single target molecule, such as a drug candidate, in an explicit water box containing thousands of solvent molecules incurs substantial computational cost. Classical implicit solvent models, such as the \gls{gb} approximation, mitigate this by eliminating explicit solvent degrees of freedom \citep{still1990semianalytical, Onufriev2019-yz}. While computationally efficient, these models often sacrifice accuracy relative to fully atomistic descriptions.
+However, simulating a single target molecule, such as a drug candidate, in an explicit water box containing thousands of solvent molecules comes with high computational cost \citep{roux1999implicit, feig2004performance}. Classical implicit solvent models, such as the \gls{gb} approximation, mitigate this by eliminating explicit solvent degrees of freedom \citep{still1990semianalytical, Onufriev2019-yz}. While computationally efficient, these models often sacrifice accuracy relative to fully atomistic systems.
 
 
 \begin{figure}
@@ -29,7 +29,6 @@ However, simulating a single target molecule, such as a drug candidate, in an ex
     \caption{Alanine dipeptide (22 atoms) solvated in an explicit water environment. The cubic simulation box has a side length of 2,nm and contains 696 solvent atoms, demonstrating the disproportionately high number of solvent degrees of freedom that drive up the computational cost of fully atomistic simulations}
     \label{fig:solvated_alanine}
 \end{figure}
-
 
 
 % Related Work 

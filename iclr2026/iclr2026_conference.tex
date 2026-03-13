@@ -16,13 +16,14 @@
 \usepackage{textcomp}
 \usepackage[T1]{fontenc}
 \usepackage{tipa}
-\usepackage{times}
 \usepackage{latexsym}
 \usepackage{comment}
 \usepackage{booktabs}
 \usepackage[acronym]{glossaries}
+\usepackage{svg}
 
-\makeglossaries
+\glsdisablehyper
+
 
 \newacronym{ml}{ML}{Machine Learning}
 \newacronym{cg}{CG}{Coarse Graining}
@@ -37,6 +38,8 @@
 \newacronym{kl}{KL}{Kullback–Leibler}
 \newacronym{ase}{ASE}{Atomic Simulation Environment}
 \newacronym{ffn}{FFN}{Feedforward Neural Network}
+\newacronym{tica}{TICA}{Time-lagged Independent Component Analysis}
+
 
 \title{Machine Learning of Transferable Implicit Solvation Models}
 
@@ -48,7 +51,7 @@
 Institute of Nanotechnology\\
 Karlsruhe Institute of Technology\\
 Karlsruhe, 76131, Germany \\
-}\\
+}
 
 
 % The \author macro works with any number of authors. There are two commands
@@ -74,7 +77,11 @@ Karlsruhe, 76131, Germany \\
 
 \input{content/introduction}
 
-\input{content/data_generation}
+\input{content/methods}
+
+\input{content/experiments}
+
+\input{content/conclusion}
 
 \input{content/outlook}
 
