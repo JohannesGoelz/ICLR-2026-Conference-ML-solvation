@@ -45,6 +45,38 @@ The simulation is a sequential algorithm mainly scaling in the number of atoms i
 % Thus using a ML model, which estimates the effects of the water may be more efficient.
 
 
+
+\subsection{Coarse-Graining}
+\label{cg}
+
+Coarse-graining (CG) is a widely used approach in MD simulations that reduces computational complexity by approximating groups of atoms as single effective particles, known as CG beads \citep{cgInBioSims}. The interactions between CG beads are described by a CG energy function, which is parameterized to reproduce the behavior of the underlying all-atom system. By simulating these CG beads instead of all individual atoms, one can efficiently approximate the dynamics and thermodynamics of complex molecular systems \citep{cgReviewNoid}. In general, we seek to approximate the potential of mean force (PMF) with the CG energy function. The PMF allows for sampling from the CG space \citep{schopmansEtAl}.
+
+Consider a molecular system with \(N\) atoms and atomic coordinates \(\mathbf{r} \in \mathbb{R}^{3N}\). The CG mapping \(\xi: \mathbb{R}^{3N} \to \mathbb{R}^{3n}\) reduces the degrees of freedom by projecting \(\mathbf{r}\) into a lower-dimensional space $\mathbf{x}=\xi(\mathbf{r})$ with $n<N$. The parameters $\theta$ of the CG model define the CG energy function $V(\mathbf{x}; \theta)$. In classical CG approaches, these include physical parameters such as force constants and partial charges, whereas in ML-based CG, they correspond to the weights of a neural network \citep{cgBasics}. A common objective is to have the equilibrium distribution of the CG system approximate the equilibrium distribution of the all-atom system being mapped to the CG space. This is called thermodynamic consistency and can be achieved by enforcing 
+\begin{align}
+    V(\mathbf{x}, \theta) \equiv -k_B T \,\text{ln} \, p^{\text{CG}}(\mathbf{x}) + \text{const} \, ,
+\end{align}
+where $k_B$ is the Boltzmann constant, $T$ the temperature, and $p^{\text{CG}}(\mathbf{x})$ is the mapped equilibrium distribution of the atomic coordinates described by
+\begin{align}
+    p^{\text{CG}}(\mathbf{x)} = \frac{\int \mu (\mathbf{r}) \delta(x - \xi(\mathbf{r})) \text{d}\mathbf{r}}{\int \mu (\mathbf{r}) \text{d} \mathbf{r}}
+\end{align}
+with Dirac delta function $\delta$ and Boltzmann distribution $\mu$ \citep{cgBasics}.
+
+In a solute-solvent system with solute coordinates $\mathbf{y}$ and solvent coordinates $\mathbf{w}$, implicit solvation can be interpreted as a special case of coarse-graining, where the CG mapping is defined as
+\begin{align}
+    \xi\left( 
+\begin{bmatrix}
+\mathbf{y} \\
+\mathbf{w}
+\end{bmatrix}
+\right) = \mathbf{y}.
+\end{align}
+
+
+\subsection{Force Matching}
+\label{subsec:force_matching}
+
+
+
 \subsection{Model Architecture}
 
 The baseline model architecture employed in this work was adapted from \cite{machine_learning_implicit_solvation}. The model incorporates a physical prior based on the AMBER14-all force field (cite), which computes the vacuum energy for a given system. This approach can therefore be considered a delta-learning scheme, wherein the neural network is tasked with learning the solvation free energy of the system. 
@@ -54,6 +86,8 @@ The core building block of the architecture is a SchNet (cite) model. This netwo
 To facilitate efficient hyperparameter optimization and feature space exploration, we implemented a highly modular embedding layer that dynamically adapts to user-specified atom-level input features. To systematically evaluate the impact of novel atomic descriptors on model performance, an extensible feature registry was introduced. Integrating a new feature requires only the definition of a standard interface: one component specifying its extraction protocol from PDB files during dataset generation, and a corresponding PyTorch module to process the feature during training and inference. Depending on their data type, these atomic features undergo specific preprocessing—such as radial basis function (RBF) expansions, categorical embedding lookups, or sinusoidal encodings—before being projected to the hidden dimensionality of the SchNet architecture via a dense neural network.
 
 Furthermore, to circumvent the computationally expensive process of regenerating the entire dataset when incorporating new descriptors, the data pipeline is designed to support the dynamic injection of atomistic features. This architecture allows novel features to be seamlessly appended to existing datasets with minimal computational overhead. The injection mechanism is natively coupled to the extraction methods defined within the feature registry; consequently, registering a new feature automatically provisions the necessary routines to extract, inject, and immediately initiate training on the augmented dataset.
+
+The features used during the study are inspired by \cite{machine_learning_implicit_solvation} and \cite{klein_transferable_2024}. Specifically, we systematically evaluate three distinct atomic representation schemes. First, following the baseline Transferable Boltzmann Generator (TBG) formulation, we employ a minimal categorical encoding consisting solely of the five fundamental element types. Second, we implement the comprehensive \textit{TBG + full} scheme, which constructs a composite embedding from a fine-grained atom type (54 topological classes), the parent amino acid identity (20 classes), and the atom's discrete sequence position. Finally, adapting the q-ISSNet approach, we integrate continuous atomic partial charges derived directly from the underlying force field. In accordance with our modular architecture, the categorical descriptors from the TBG schemes are resolved via learnable embedding lookups, whereas the continuous partial charges are expanded using a radial basis function (RBF) kernel before being passed through the dense projection layer.
 
 
 \subsection{Dataset Orchestration During Training}
@@ -73,11 +107,12 @@ To achieve this, multiple ASE \texttt{Atoms} objects are instantiated simultaneo
 
 The execution strategy is as follows: integrators are initialized as separate green threads, but yield execution to the next thread in the queue via a hook intercepted during the \texttt{Atoms} object's force call. Once an iteration completes—meaning all active threads have yielded once—a single batched GPU forward pass is issued, encompassing the atomic positions from all threaded integrators. 
 
-Because the parallelization is implemented via a simple hook on the force evaluation, the mechanism remains fundamentally task-agnostic. Any process relying on force evaluations can benefit from this substantial acceleration. For instance, geometric energy minimization using the BFGS algorithm can be parallelized using the exact same codebase. Overall, this parallelization scheme achieves an approximate 75x speedup compared to running purely sequential simulations (TODO of course this needs to be more precise). 
+Because the parallelization is implemented via a simple hook on the force evaluation, the mechanism remains fundamentally task-agnostic. Any process relying on force evaluations can benefit from this substantial acceleration. For instance, geometric energy minimization using the BFGS algorithm can be parallelized using the exact same codebase. As shown in Figure~\ref{fig:speedup_multiatoms}, the batched scheme achieves near-linear scaling up to 128 systems (57$\times$ speedup), where GPU compute and scheduling overhead contribute equally to the total step time. Beyond this point, overhead from batching and data transfer grows superlinearly, yet a throughput gain of 79$\times$ is still realized at 2048 simultaneous systems.
+
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=1\linewidth]{images/speedup_multiatoms.png}
-    \caption{Relative speedup of running $n$ systems compared to running a single system. The overhead represents the percentage of time spent on computations other than the GPU forward pass.}
+    \includegraphics[width=1\linewidth]{images/multiatoms_profiling.pdf}
+    \caption{Performance scaling of batched parallel MD simulations. \textbf{(a)}~Time per integration step broken down into GPU forward pass and scheduling/preprocessing overhead. \textbf{(b)}~Throughput speedup relative to a single-system baseline, compared against ideal linear scaling. Near-linear speedup is achieved up to 256 systems, beyond which overhead from batching and data transfer becomes the dominant cost.}
     \label{fig:speedup_multiatoms}
 \end{figure}

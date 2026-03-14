@@ -9,8 +9,7 @@ Understanding molecular behavior at the atomistic scale is essential for applica
 
 
 
-
-This, in turn, necessitates sampling from the Boltzmann distribution, where the probability of observing a configuration $x \in \mathcal{X}$ is proportional to $\tilde{p}_X(x) = \exp\left(\frac{-E(x)}{k_B T}\right)$, with $E(x)$ the potential energy, $T$ the temperature, and $k_B$ the Boltzmann constant \citep{schopmans2026efficient}. The normalized distribution $p_X(x) = \tilde{p}_X(x)/Z$ involves the partition function $Z$, which is generally unknown and intractable. A classical approach to sampling from this distribution is \gls{md}, which propagates atomic positions through time according to Newton's equations of motion, thereby generating configurations distributed according to the Boltzmann distribution \citep{karplus2002molecular, hollingsworth2018molecular}.
+This, in turn, necessitates sampling from the Boltzmann distribution, where the probability of observing a configuration $\mathbf{r} \in \mathbb{R}^{3N}$ is proportional to $\tilde{\mu}(\mathbf{r}) = \exp\left(\frac{-E(\mathbf{r})}{k_B T}\right)$, with $E(\mathbf{r})$ the potential energy, $T$ the temperature, and $k_B$ the Boltzmann constant \citep{schopmans2026efficient}. The normalized distribution $\mu(\mathbf{r}) = \tilde{\mu}(\mathbf{r})/Z$ involves the partition function $Z$, which is generally unknown and intractable. A classical approach to sampling from this distribution is \gls{md}, which propagates atomic positions through time according to Newton's equations of motion, thereby generating configurations distributed according to the Boltzmann distribution \citep{karplus2002molecular, hollingsworth2018molecular}.
 
 
 % Drawbacks of current methods
@@ -24,7 +23,6 @@ However, simulating a single target molecule, such as a drug candidate, in an ex
     \caption{Alanine dipeptide (22 atoms) solvated in an explicit water environment. The cubic simulation box has a padding of 2,nm and contains 696 solvent atoms, demonstrating the disproportionately high number of solvent degrees of freedom that drive up the computational cost of fully atomistic simulations}
     \label{fig:solvated_alanine}
 \end{figure}
-
 
 % contribution
 

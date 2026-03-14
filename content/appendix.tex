@@ -14,7 +14,7 @@ To maximize GPU utilization, we simulated multiple independent copies of the sys
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.8\linewidth]{images/throughput_300K.pdf}
+    \includegraphics[width=0.7\linewidth]{images/throughput_300K.pdf}
     \caption{Aggregate simulation throughput for independent AAAA systems running concurrently at 300~K on a single NVIDIA A100 GPU.}
     \label{fig:throughput_300k}
 \end{figure}
@@ -22,7 +22,7 @@ To maximize GPU utilization, we simulated multiple independent copies of the sys
 We also evaluated using \gls{remd} \cite{qi2018replica} for the data generation.
 By running simulations at multiple temperatures and exchanging configurations, \gls{remd} helps to explore conformational space. This is important in order to avoid biased datasets that overrepresent only a limited set of conformations.
 
-For the \gls{remd} protocol, we leveraged the \texttt{reform} package \cite{TODO_add_reform_cite} to orchestrate replica swaps. 
+For the \gls{remd} protocol, we leveraged the \texttt{reform} package \cite{chen_noe_reform} to orchestrate replica swaps. 
 By default, the multi-threaded interface of \texttt{reform} does not support periodic boundary conditions. 
 However, modeling the explicit solvent relies on periodic boundary conditions to avoid surface artifacts. 
 To overcome this limitation, we constructed a custom wrapper around \texttt{reform}'s single-threaded API. 
@@ -32,7 +32,7 @@ The throughput for our customized \gls{remd} implementation is outlined in Figur
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.8\linewidth]{images/throughput_reform.pdf}
+    \includegraphics[width=0.7\linewidth]{images/throughput_reform.pdf}
     \caption{Throughput of our custom-parallelized \gls{remd} setup using the \texttt{reform} package, evaluated on an uncapped tetrapeptide.}
     \label{fig:throughput_reform}
 \end{figure}
@@ -43,7 +43,7 @@ Because a fixed margin of water must surround the peptide in all three dimension
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.8\linewidth]{images/scaling_plot.pdf}
+    \includegraphics[width=0.7\linewidth]{images/scaling_plot.pdf}
     \caption{Number of explicitly solvated atoms (TIP3P with 1.2\,nm padding) plotted against sequence length for random combinations of 20 standard amino acids. A nonlinear increase in system size naturally emerges to encapsulate the expanding spatial volume of longer chains.}
     \label{fig:system_scaling}
 \end{figure}

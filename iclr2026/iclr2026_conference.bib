@@ -157,6 +157,86 @@
   language  = "en"
 }
 
+% CG
+
+@article{denoising,
+  title={Two for one: Diffusion models and force fields for coarse-grained molecular dynamics},
+  author={Arts, Marloes and Garcia Satorras, Victor and Huang, Chin-Wei and Zugner, Daniel and Federici, Marco and Clementi, Cecilia and No{\'e}, Frank and Pinsler, Robert and van den Berg, Rianne},
+  journal={Journal of Chemical Theory and Computation},
+  volume={19},
+  number={18},
+  pages={6151--6159},
+  year={2023},
+  publisher={ACS Publications}
+}
+
+
+@article{cgBasics,
+author = {Wang, Jiang and Olsson, Simon and Wehmeyer, Christoph and P{\'e}rez, Adrià and Charron, Nicholas E. and de Fabritiis, Gianni and No{\'e}, Frank and Clementi, Cecilia},
+title = {Machine Learning of Coarse-Grained Molecular Dynamics Force Fields},
+journal = {ACS Central Science},
+volume = {5},
+number = {5},
+pages = {755-767},
+year = {2019},
+doi = {10.1021/acscentsci.8b00913},
+    note ={PMID: 31139712},
+
+URL = { 
+         https://doi.org/10.1021/acscentsci.8b00913
+},
+eprint = { 
+ https://doi.org/10.1021/acscentsci.8b00913
+}
+}
+
+
+@inproceedings{schopmansEtAl,
+author = {Schopmans, Henrik and Friederich, Pascal},
+title = {Conditional normalizing flows for active learning of coarse-grained molecular representations},
+year = {2024},
+publisher = {JMLR.org},
+abstract = {Efficient sampling of the Boltzmann distribution of molecular systems is a long-standing challenge. Recently, instead of generating long molecular dynamics simulations, generative machine learning methods such as normalizing flows have been used to learn the Boltzmann distribution directly, without samples. However, this approach is susceptible to mode collapse and thus often does not explore the full configurational space. In this work, we address this challenge by separating the problem into two levels, the fine-grained and coarse-grained degrees of freedom. A normalizing flow conditioned on the coarse-grained space yields a probabilistic connection between the two levels. To explore the configurational space, we employ coarse-grained simulations with active learning which allows us to update the flow and make all-atom potential energy evaluations only when necessary. Using alanine dipeptide as an example, we show that our methods obtain a speedup to molecular dynamics simulations of approximately 15.9 to 216.2 compared to the speedup of 4.5 of the current state-of-the-art machine learning approach.},
+booktitle = {Proceedings of the 41st International Conference on Machine Learning},
+articleno = {1785},
+numpages = {24},
+location = {Vienna, Austria},
+series = {ICML'24}
+}
+
+
+@article{cgInBioSims,
+  author    = {Ingolfsson, Helgi I. and Lopez, Carlos A. and Uusitalo, Juha J. and de Jong, Dafne H. and Gopal, Siewert M. and Periole, Xavier and Marrink, Siewert J.},
+  title     = {The power of coarse graining in biomolecular simulations},
+  journal   = {Wiley Interdisciplinary Reviews: Computational Molecular Science},
+  year      = {2014},
+  volume    = {4},
+  number    = {3},
+  pages     = {225--248},
+  month     = {05},
+  doi       = {10.1002/wcms.1169},
+  pmid      = {25309628},
+  pmcid     = {PMC4171755}
+}
+
+@article{cgReviewNoid,
+    author = {Noid, W. G.},
+    title = {Perspective: Coarse-grained models for biomolecular systems},
+    journal = {The Journal of Chemical Physics},
+    volume = {139},
+    number = {9},
+    pages = {090901},
+    year = {2013},
+    month = {09},
+    abstract = { By focusing on essential features, while averaging over less important details, coarse-grained (CG) models provide significant computational and conceptual advantages with respect to more detailed models. Consequently, despite dramatic advances in computational methodologies and resources, CG models enjoy surging popularity and are becoming increasingly equal partners to atomically detailed models. This perspective surveys the rapidly developing landscape of CG models for biomolecular systems. In particular, this review seeks to provide a balanced, coherent, and unified presentation of several distinct approaches for developing CG models, including top-down, network-based, native-centric, knowledge-based, and bottom-up modeling strategies. The review summarizes their basic philosophies, theoretical foundations, typical applications, and recent developments. Additionally, the review identifies fundamental inter-relationships among the diverse approaches and discusses outstanding challenges in the field. When carefully applied and assessed, current CG models provide highly efficient means for investigating the biological consequences of basic physicochemical principles. Moreover, rigorous bottom-up approaches hold great promise for further improving the accuracy and scope of CG models for biomolecular systems. },
+    issn = {0021-9606},
+    doi = {10.1063/1.4818908},
+    url = {https://doi.org/10.1063/1.4818908},
+    eprint = {https://pubs.aip.org/aip/jcp/article-pdf/doi/10.1063/1.4818908/19892652/090901\_1\_1.4818908.pdf},
+}
+
+
+
 % Applications
 
 @article{machine_learning_implicit_solvation,
@@ -319,3 +399,40 @@ url={https://doi.org/10.1021/acscentsci.3c01160}
   year={2018},
   publisher={ACS Publications}
 }
+
+
+@inproceedings{klein_transferable_2024,
+	title = {Transferable Boltzmann Generators},
+	volume = {37},
+	url = {https://proceedings.neurips.cc/paper_files/paper/2024/file/5035a409f5798e188079e236f437e522-Paper-Conference.pdf},
+	doi = {10.52202/079017-1439},
+	pages = {45281--45314},
+	booktitle = {Advances in Neural Information Processing Systems},
+	publisher = {Curran Associates, Inc.},
+	author = {Klein, Leon and Noé, Frank},
+	editor = {Globerson, A. and Mackey, L. and Belgrave, D. and Fan, A. and Paquet, U. and Tomczak, J. and Zhang, C.},
+	date = {2024},
+}
+
+% Appendix
+
+@incollection{qi2018replica,
+  title={Replica exchange molecular dynamics: a practical application protocol with solutions to common problems and a peptide aggregation and self-assembly example},
+  author={Qi, Ruxi and Wei, Guanghong and Ma, Buyong and Nussinov, Ruth},
+  booktitle={Peptide self-assembly: Methods and protocols},
+  pages={101--119},
+  year={2018},
+  publisher={Springer}
+}
+
+% CUstom Reform cite:
+
+@misc{chen_noe_reform,
+  author       = {Chen, Yaoyi},
+  title        = {reform: Replica exchange MD simulations for OpenMM},
+  year         = {2020},
+  publisher    = {GitHub},
+  howpublished = {\url{https://github.com/noegroup/reform}},
+  note         = {Accessed: 2026-03-14}
+}
+

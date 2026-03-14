@@ -4,16 +4,37 @@
 
 \textbf{Dataset}
 
-The datasets utilized for training in this study are constructed as follows. First, we separate a test set comprising 20\% of the total 400 dipeptides; these unseen systems are strictly withheld during training. For the remaining 80\% of the dipeptide trajectories—each containing 2 million frames in their raw format—we partition the data chronologically. The latter half of each trajectory serves as a validation set to evaluate the model's in-distribution generalization, while the former half is used to train the main model. We postulate that this trajectory length is sufficient to provide a robust approximation of the Boltzmann distribution for dipeptides (cite this claim eg issnet paper had 1million frames). 
+The datasets utilized for training and evaluation are constructed from a total of 400 dipeptide systems. To assess generalization to novel molecular graphs, we strictly withhold a test set comprising 20\% of the dipeptides; these unseen systems are entirely excluded from the training phase. For the remaining 80\% of the dipeptides, we process raw Molecular Dynamics (MD) trajectories, each containing \num{2e6} frames. We partition these in-distribution trajectories chronologically: the first half (\num{e6} frames) forms the training set to optimize the main model, while the second half serves as the validation set to monitor in-distribution generalization. Following established protocols, we operate under the assumption that a trajectory length of \num{e6} frames provides a sufficiently robust approximation of the Boltzmann distribution for dipeptide systems \citep{machine_learning_implicit_solvation} (important: frames alone not sufficient. only half the traj length of issnet).
 
 \textbf{Metrics}
 
-(todo cite) has shown that the mere force error on the train, test and validation set is not yet sufficient for showing that the model is capable of simulating a sysmtem such that it samples the boltzmann distrbution of a given system. In order to evaluate 
+Prior work \citep{machine_learning_implicit_solvation} demonstrates that relying solely on static force prediction errors is insufficient for model selection, as the lowest mean squared error (MSE) on atomic forces does not strictly correlate with the best approximation of the target Boltzmann distribution. To rigorously evaluate the thermodynamic fidelity of the trained models, we conduct MD simulations using the framework detailed in Section \ref{sec:todo} \citep{ase_placeholder}, employing our models as surrogate calculators.
 
+To ensure consistent comparisons, all baseline models and ablations are evaluated on the same randomly selected molecule from both the train and test sets. We execute 256 parallel MD replicas utilizing our simulation framework. Following \citet{machine_learning_implicit_solvation}, we initialize these parallel simulations by randomly sampling starting conformations from the all-atom ground-truth data of the respective system. This informed initialization facilitates a brief equilibration phase of 0.1 ns per replica. Subsequent production runs of 1 ns per replica aggregate to 256 ns of total effective simulation time, yielding \num{2.56e6} extracted frames.
+
+To maintain parity across evaluations, both the model-generated and ground-truth trajectories are uniformly subsampled to \num{e6} frames. We then project these structural ensembles onto relevant low-dimensional collective variables—specifically, Ramachandran dihedral angles and \gls{tica} coordinates. Finally, we compute the \gls{kl} divergence and the Wasserstein distance between the predicted and ground-truth marginal distributions on these projections. These metrics provide a robust, quantitative measure of how closely the simulated ensembles approximate the true target Boltzmann distribution.
 
 \subsection{Model Complexity Ablation}
 
+We evaluate the impact of model capacity through a targeted ablation study across three representative scales of network complexity, detailed in Table \ref{tab:model_params}. This focused approach is motivated by prior work \citep{machine_learning_implicit_solvation}, which demonstrated that the force prediction accuracy of similar architectures is generally robust to structural hyperparameters, with performance being overwhelmingly dictated by the chosen atomic embeddings. Our empirical results corroborate this observation; scaling the architecture from a compact baseline ($\approx$ 97k parameters) to a highly parameterized network ($\approx$ 5M parameters) yielded no significant performance differences in either static force prediction (MSE) or dynamic thermodynamic fidelity (KLD). 
+
+\begin{table}[h]
+    \centering
+    \caption{Representative model configurations used for our complexity ablation. The chosen architectures scale the hidden dimension ($h_{\text{dim}}$) and number of interaction blocks to evaluate capacity constraints, following \citep{machine_learning_implicit_solvation}. We used the \textit{TBG + full} embedding scheme, whose contribution to the total parameter size is negligible ($<$0.4\%).}
+    \label{tab:model_params}
+    \begin{tabular}{rrr}
+        \toprule
+        Hidden Dimension ($h_{\text{dim}}$) & Interaction Blocks & Total Parameters \\
+        \midrule
+        32 & 3 & 97,185 \\
+        128 & 7 & 530,689 \\
+        512 & 11 & 5,011,073 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
 \subsection{Feature Embedding Ablation}
+
 
 \subsection{Train Trajectory Length Ablation}
 
