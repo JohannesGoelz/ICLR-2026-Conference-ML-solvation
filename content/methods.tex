@@ -75,7 +75,7 @@ In a solute-solvent system with solute coordinates $\mathbf{y}$ and solvent coor
 \subsection{Force Matching}
 \label{subsec:force_matching}
 
-To parameterize the implicit-solvent model, we adopt variational force matching in the spirit of \citet{machine_learning_implicit_solvation}. In the coarse-graining framework from Section~\ref{cg}, the optimal CG force field is obtained by matching model forces to the conditional mean force induced by the all-atom system under the mapping $\mathbf{x}=\xi(\mathbf{r})$. 
+To parameterize the implicit-solvent model, we adopt variational force matching in the spirit of \citet{machine_learning_implicit_solvation}. Within the coarse-graining framework introduced in Section~\ref{cg}, the objective is to match the model force field to the mean force induced by the underlying explicit-solvent system after elimination of the solvent degrees of freedom.
 
 Using the energy decomposition
 \begin{align}
@@ -101,7 +101,7 @@ and the full predicted force used during training is
     = \mathbf{f}^{\text{vac}}_i + \widehat{\Delta \mathbf{f}}_i(\theta)
     = \mathbf{f}^{\text{vac}}_i - \nabla_{\mathbf{y}}V_{\text{solv}}(\mathbf{y}_i;\theta).
 \end{align}
-In the implementation, a minibatch $\mathcal{B}$ may contain molecules with different numbers of atoms. The loss is therefore averaged over all Cartesian force components present in the batch, rather than written as a fixed factor $3nM$. Denoting by $n_i$ the number of atoms of sample $i$ and by $N_{\mathcal{B}}=\sum_{i\in\mathcal{B}} n_i$ the total number of atoms in the minibatch, the optimized objective is
+Because a minibatch $\mathcal{B}$ can contain molecules of different sizes, we define the loss as an average over all Cartesian force components in the batch. Let $n_i$ denote the number of atoms in sample $i$, and let $N_{\mathcal{B}} = \sum_{i\in\mathcal{B}} n_i$ be the total number of atoms across the minibatch. The training objective is then given by
 \begin{align}
     \mathcal{L}_{\text{FM}}(\theta)
     &= \frac{1}{3N_{\mathcal{B}}}\sum_{i\in\mathcal{B}}
@@ -110,7 +110,7 @@ In the implementation, a minibatch $\mathcal{B}$ may contain molecules with diff
     \bigl\lVert\mathbf{f}^{\text{exp}}_i - \mathbf{f}^{\text{vac}}_i
     + \nabla_{\mathbf{y}}V_{\text{solv}}(\mathbf{y}_i;\theta)\bigr\rVert^2.
 \end{align}
-This is equivalent to learning the residual solvation force, but it matches the training code more closely: the model differentiates only $V_{\text{solv}}$, adds the precomputed vacuum forces, and then applies a mean-squared error to the resulting total force tensor. In addition, the forces are normalized by a global dataset force scale before the loss is evaluated. Minimizing $\mathcal{L}_{\text{FM}}$ therefore learns the solvent contribution to the force field directly from explicit-solvent trajectories while retaining the physically motivated vacuum prior.
+This formulation shows that the model learns the solvent contribution to the force field while retaining the physically motivated vacuum prior. In practice, the force targets are normalized by a global dataset-wide force scale before evaluation of the mean-squared error.
 
 
 \subsection{Model Architecture}
