@@ -75,16 +75,7 @@ In a solute-solvent system with solute coordinates $\mathbf{y}$ and solvent coor
 \subsection{Force Matching}
 \label{subsec:force_matching}
 
-To parameterize the implicit-solvent model, we adopt variational force matching in the spirit of \citet{machine_learning_implicit_solvation}. In the coarse-graining framework from Section~\ref{cg}, the optimal CG force field is obtained by matching model forces to the conditional mean force induced by the all-atom system under the mapping $\mathbf{x}=\xi(\mathbf{r})$. For implicit solvation, this mapping is
-\begin{align}
-    \mathbf{x}=\mathbf{y}=\xi\!\left(
-    \begin{bmatrix}
-        \mathbf{y}\\
-        \mathbf{w}
-    \end{bmatrix}
-    \right),
-\end{align}
-such that solvent coordinates $\mathbf{w}$ are integrated out and only solute coordinates $\mathbf{y}$ remain.
+To parameterize the implicit-solvent model, we adopt variational force matching in the spirit of \citet{machine_learning_implicit_solvation}. In the coarse-graining framework from Section~\ref{cg}, the optimal CG force field is obtained by matching model forces to the conditional mean force induced by the all-atom system under the mapping $\mathbf{x}=\xi(\mathbf{r})$. 
 
 Using the energy decomposition
 \begin{align}
@@ -108,10 +99,10 @@ and training minimizes the mean-squared force-matching objective
 \begin{align}
     \mathcal{L}_{\text{FM}}(\theta)
     &= \frac{1}{3nM}\sum_{i=1}^{M}
-    \left\|\Delta \mathbf{f}_i - \widehat{\Delta \mathbf{f}}_i(\theta)\right\|^2 \\
+    \bigl\lVert\Delta \mathbf{f}_i - \widehat{\Delta \mathbf{f}}_i(\theta)\bigr\rVert^2 \\
     &= \frac{1}{3nM}\sum_{i=1}^{M}
-    \left\|\mathbf{f}^{\text{exp}}_i - \mathbf{f}^{\text{vac}}_i
-    + \nabla_{\mathbf{y}}V_{\text{solv}}(\mathbf{y}_i;\theta)\right\|^2,
+    \bigl\lVert\mathbf{f}^{\text{exp}}_i - \mathbf{f}^{\text{vac}}_i
+    + \nabla_{\mathbf{y}}V_{\text{solv}}(\mathbf{y}_i;\theta)\bigr\rVert^2,
 \end{align}
 where $n$ is the number of solute atoms and $M$ is the minibatch size. Minimizing $\mathcal{L}_{\text{FM}}$ therefore learns the solvent contribution to the force field directly from explicit-solvent trajectories while retaining the physically motivated vacuum prior.
 
