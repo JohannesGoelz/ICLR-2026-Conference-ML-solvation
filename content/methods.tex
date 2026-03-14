@@ -75,42 +75,69 @@ In a solute-solvent system with solute coordinates $\mathbf{y}$ and solvent coor
 \subsection{Force Matching}
 \label{subsec:force_matching}
 
-To parameterize the implicit-solvent model, we adopt variational force matching in the spirit of \citet{machine_learning_implicit_solvation}. Within the coarse-graining framework introduced in Section~\ref{cg}, the objective is to match the model force field to the mean force induced by the underlying explicit-solvent system after elimination of the solvent degrees of freedom.
 
-Using the energy decomposition
+Following the variational force-matching formulation for implicit solvent models \citep{machine_learning_implicit_solvation}, we treat the solvent as integrated out and learn a solvation contribution that reproduces explicit-solvent forces on the solute coordinates $\mathbf{y}$. Let the model potential be
 \begin{align}
-    V(\mathbf{y};\theta) = V_{\text{vac}}(\mathbf{y}) + V_{\text{solv}}(\mathbf{y};\theta),
+    V_{\theta}(\mathbf{y}) = V_{\mathrm{vac}}(\mathbf{y}) + V_{\mathrm{solv},\theta}(\mathbf{y}),
 \end{align}
-the corresponding model force is
+where $V_{\mathrm{vac}}$ is the known vacuum potential from the classical force field and $V_{\mathrm{solv},\theta}$ is the learned solvation free-energy term. The corresponding model force is
 \begin{align}
-    \mathbf{F}_{\theta}(\mathbf{y})
-    = -\nabla_{\mathbf{y}} V_{\text{vac}}(\mathbf{y})
-      -\nabla_{\mathbf{y}} V_{\text{solv}}(\mathbf{y};\theta).
+    \hat{\mathbf{f}}_{\theta}(\mathbf{y})
+    = -\nabla_{\mathbf{y}} V_{\theta}(\mathbf{y})
+    = \mathbf{f}_{\mathrm{vac}}(\mathbf{y}) + \mathbf{f}_{\mathrm{solv},\theta}(\mathbf{y}),
 \end{align}
-Given explicit-solvent samples $\{(\mathbf{y}_i,\mathbf{f}^{\text{exp}}_i)\}_{i=1}^{M}$ and the corresponding vacuum forces $\mathbf{f}^{\text{vac}}_i=-\nabla_{\mathbf{y}}V_{\text{vac}}(\mathbf{y}_i)$, we define the target solvation force as
+with $\mathbf{f}_{\mathrm{vac}}(\mathbf{y})=-\nabla_{\mathbf{y}}V_{\mathrm{vac}}(\mathbf{y})$ and $\mathbf{f}_{\mathrm{solv},\theta}(\mathbf{y})=-\nabla_{\mathbf{y}}V_{\mathrm{solv},\theta}(\mathbf{y})$.
+
+Given explicit-solvent training samples $\{(\mathbf{y}_i, \mathbf{f}^{\mathrm{exp}}_i)\}_{i=1}^{M}$ with $N$ solute atoms, we minimize the empirical force-matching loss
 \begin{align}
-    \Delta \mathbf{f}_i = \mathbf{f}^{\text{exp}}_i - \mathbf{f}^{\text{vac}}_i.
+    \mathcal{L}_{\mathrm{FM}}(\theta)
+    &= \frac{1}{3NM}\sum_{i=1}^{M}
+    \lVert\mathbf{f}^{\mathrm{exp}}_i - \hat{\mathbf{f}}_{\theta}(\mathbf{y}_i)\rVert_2^2 \\
+    &= \frac{1}{3NM}\sum_{i=1}^{M}
+    \lVert\mathbf{f}^{\mathrm{exp}}_i - \mathbf{f}_{\mathrm{vac}}(\mathbf{y}_i) + \nabla_{\mathbf{y}}V_{\mathrm{solv},\theta}(\mathbf{y}_i)\rVert_2^2.
 \end{align}
-The network predicts
-\begin{align}
-    \widehat{\Delta \mathbf{f}}_i(\theta) = -\nabla_{\mathbf{y}}V_{\text{solv}}(\mathbf{y}_i;\theta),
-\end{align}
-and the full predicted force used during training is
-\begin{align}
-    \widehat{\mathbf{f}}_i(\theta)
-    = \mathbf{f}^{\text{vac}}_i + \widehat{\Delta \mathbf{f}}_i(\theta)
-    = \mathbf{f}^{\text{vac}}_i - \nabla_{\mathbf{y}}V_{\text{solv}}(\mathbf{y}_i;\theta).
-\end{align}
-Because a minibatch $\mathcal{B}$ can contain molecules of different sizes, we define the loss as an average over all Cartesian force components in the batch. Let $n_i$ denote the number of atoms in sample $i$, and let $N_{\mathcal{B}} = \sum_{i\in\mathcal{B}} n_i$ be the total number of atoms across the minibatch. The training objective is then given by
-\begin{align}
-    \mathcal{L}_{\text{FM}}(\theta)
-    &= \frac{1}{3N_{\mathcal{B}}}\sum_{i\in\mathcal{B}}
-    \bigl\lVert\mathbf{f}^{\text{exp}}_i - \widehat{\mathbf{f}}_i(\theta)\bigr\rVert^2 \\
-    &= \frac{1}{3N_{\mathcal{B}}}\sum_{i\in\mathcal{B}}
-    \bigl\lVert\mathbf{f}^{\text{exp}}_i - \mathbf{f}^{\text{vac}}_i
-    + \nabla_{\mathbf{y}}V_{\text{solv}}(\mathbf{y}_i;\theta)\bigr\rVert^2.
-\end{align}
-This formulation shows that the model learns the solvent contribution to the force field while retaining the physically motivated vacuum prior. In practice, the force targets are normalized by a global dataset-wide force scale before evaluation of the mean-squared error.
+
+The neural network predicts an energy, and forces are obtained by automatic differentiation, i.e. $\mathbf{f}_{\mathrm{solv},\theta}(\mathbf{y})=-\nabla_{\mathbf{y}}V_{\mathrm{solv},\theta}(\mathbf{y})$. During training, precomputed vacuum forces from the dataset are added to these learned solvation forces to form $\hat{\mathbf{f}}_{\theta}$, and optimization is performed with mean-squared error over all force components.
+
+
+
+
+% To parameterize the implicit-solvent model, we adopt variational force matching in the spirit of \citet{machine_learning_implicit_solvation}. Within the coarse-graining framework introduced in Section~\ref{cg}, the objective is to match the model force field to the mean force induced by the underlying explicit-solvent system after elimination of the solvent degrees of freedom.
+
+% Using the energy decomposition
+% \begin{align}
+%     V(\mathbf{y};\theta) = V_{\text{vac}}(\mathbf{y}) + V_{\text{solv}}(\mathbf{y};\theta),
+% \end{align}
+% the corresponding model force is
+% \begin{align}
+%     \mathbf{F}_{\theta}(\mathbf{y})
+%     = -\nabla_{\mathbf{y}} V_{\text{vac}}(\mathbf{y})
+%       -\nabla_{\mathbf{y}} V_{\text{solv}}(\mathbf{y};\theta).
+% \end{align}
+% Given explicit-solvent samples $\{(\mathbf{y}_i,\mathbf{f}^{\text{exp}}_i)\}_{i=1}^{M}$ and the corresponding vacuum forces $\mathbf{f}^{\text{vac}}_i=-\nabla_{\mathbf{y}}V_{\text{vac}}(\mathbf{y}_i)$, we define the target solvation force as
+% \begin{align}
+%     \Delta \mathbf{f}_i = \mathbf{f}^{\text{exp}}_i - \mathbf{f}^{\text{vac}}_i.
+% \end{align}
+% The network predicts
+% \begin{align}
+%     \widehat{\Delta \mathbf{f}}_i(\theta) = -\nabla_{\mathbf{y}}V_{\text{solv}}(\mathbf{y}_i;\theta),
+% \end{align}
+% and the full predicted force used during training is
+% \begin{align}
+%     \widehat{\mathbf{f}}_i(\theta)
+%     = \mathbf{f}^{\text{vac}}_i + \widehat{\Delta \mathbf{f}}_i(\theta)
+%     = \mathbf{f}^{\text{vac}}_i - \nabla_{\mathbf{y}}V_{\text{solv}}(\mathbf{y}_i;\theta).
+% \end{align}
+% Because a minibatch $\mathcal{B}$ can contain molecules of different sizes, we define the loss as an average over all Cartesian force components in the batch. Let $n_i$ denote the number of atoms in sample $i$, and let $N_{\mathcal{B}} = \sum_{i\in\mathcal{B}} n_i$ be the total number of atoms across the minibatch. The training objective is then given by
+% \begin{align}
+%     \mathcal{L}_{\text{FM}}(\theta)
+%     &= \frac{1}{3N_{\mathcal{B}}}\sum_{i\in\mathcal{B}}
+%     \bigl\lVert\mathbf{f}^{\text{exp}}_i - \widehat{\mathbf{f}}_i(\theta)\bigr\rVert^2 \\
+%     &= \frac{1}{3N_{\mathcal{B}}}\sum_{i\in\mathcal{B}}
+%     \bigl\lVert\mathbf{f}^{\text{exp}}_i - \mathbf{f}^{\text{vac}}_i
+%     + \nabla_{\mathbf{y}}V_{\text{solv}}(\mathbf{y}_i;\theta)\bigr\rVert^2.
+% \end{align}
+% The force targets are normalized by a global dataset-wide force scale before evaluation of the mean-squared error.
 
 
 \subsection{Model Architecture}
