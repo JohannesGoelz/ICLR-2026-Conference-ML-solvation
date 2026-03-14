@@ -104,16 +104,22 @@ The network predicts
 \begin{align}
     \widehat{\Delta \mathbf{f}}_i(\theta) = -\nabla_{\mathbf{y}}V_{\text{solv}}(\mathbf{y}_i;\theta),
 \end{align}
-and training minimizes the mean-squared force-matching objective
+and the full predicted force used during training is
+\begin{align}
+    \widehat{\mathbf{f}}_i(\theta)
+    = \mathbf{f}^{\text{vac}}_i + \widehat{\Delta \mathbf{f}}_i(\theta)
+    = \mathbf{f}^{\text{vac}}_i - \nabla_{\mathbf{y}}V_{\text{solv}}(\mathbf{y}_i;\theta).
+\end{align}
+In the implementation, a minibatch $\mathcal{B}$ may contain molecules with different numbers of atoms. The loss is therefore averaged over all Cartesian force components present in the batch, rather than written as a fixed factor $3nM$. Denoting by $n_i$ the number of atoms of sample $i$ and by $N_{\mathcal{B}}=\sum_{i\in\mathcal{B}} n_i$ the total number of atoms in the minibatch, the optimized objective is
 \begin{align}
     \mathcal{L}_{\text{FM}}(\theta)
-    &= \frac{1}{3nM}\sum_{i=1}^{M}
-    \left\|\Delta \mathbf{f}_i - \widehat{\Delta \mathbf{f}}_i(\theta)\right\|^2 \\
-    &= \frac{1}{3nM}\sum_{i=1}^{M}
-    \left\|\mathbf{f}^{\text{exp}}_i - \mathbf{f}^{\text{vac}}_i
-    + \nabla_{\mathbf{y}}V_{\text{solv}}(\mathbf{y}_i;\theta)\right\|^2,
+    &= \frac{1}{3N_{\mathcal{B}}}\sum_{i\in\mathcal{B}}
+    \bigl\lVert\mathbf{f}^{\text{exp}}_i - \widehat{\mathbf{f}}_i(\theta)\bigr\rVert^2 \\
+    &= \frac{1}{3N_{\mathcal{B}}}\sum_{i\in\mathcal{B}}
+    \bigl\lVert\mathbf{f}^{\text{exp}}_i - \mathbf{f}^{\text{vac}}_i
+    + \nabla_{\mathbf{y}}V_{\text{solv}}(\mathbf{y}_i;\theta)\bigr\rVert^2.
 \end{align}
-where $n$ is the number of solute atoms and $M$ is the minibatch size. Minimizing $\mathcal{L}_{\text{FM}}$ therefore learns the solvent contribution to the force field directly from explicit-solvent trajectories while retaining the physically motivated vacuum prior.
+This is equivalent to learning the residual solvation force, but it matches the actual training code more closely: the model differentiates only $V_{\text{solv}}$, adds the precomputed vacuum forces, and then applies a mean-squared error to the resulting total force tensor. In addition, the forces are normalized by a global dataset force scale before the loss is evaluated. Minimizing $\mathcal{L}_{\text{FM}}$ therefore learns the solvent contribution to the force field directly from explicit-solvent trajectories while retaining the physically motivated vacuum prior.
 
 
 \subsection{Model Architecture}
