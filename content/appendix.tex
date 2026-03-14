@@ -15,17 +15,19 @@ The first strategy consists of conventional independent simulations at a constan
 
 The second strategy employs \gls{remd} \cite{qi2018replica}, which runs simulations at multiple temperatures and periodically exchanges configurations between replicas to improve conformational sampling. This approach helps avoid biased datasets that overrepresent only a limited set of conformations. For the \gls{remd} protocol, we leveraged the \texttt{reform} package \cite{chen_noe_reform} to orchestrate replica swaps. By default, the multi-threaded interface of \texttt{reform} does not support periodic boundary conditions. However, modeling the explicit solvent requires periodic boundary conditions to avoid surface artifacts. To overcome this limitation, we constructed a custom wrapper around \texttt{reform}'s single-threaded API, managing a dedicated thread per replica to parallelize execution while retaining support for periodic boundary conditions.
 
-As shown in Figure~\ref{fig:throughput_combined}, the independent parallelization strategy achieves comparable throughput to \gls{remd} at lower parallel counts, while the \gls{remd} setup plateaus earlier due to the overhead of coordinating replica exchanges.
 
 \begin{figure}[htbp]
     \centering
     % TODO: replace with combined throughput figure
-    \fbox{\parbox{0.65\linewidth}{\centering\vspace{2cm}PLACEHOLDER: Combined throughput plot showing independent parallelization vs.\ \gls{remd} (reform) as a function of the number of parallel systems on a single NVIDIA A100 GPU.\vspace{2cm}}}
+    \includegraphics[width=0.7\linewidth]{images/throughput_remd_vs_no_remd.pdf}
     \caption{Aggregate simulation throughput on a single NVIDIA A100 GPU as a function of the number of parallel systems, comparing independent parallelization at 300~K and the custom-parallelized \gls{remd} setup using the \texttt{reform} package. Both strategies are evaluated on the uncapped AAAA tetrapeptide system.}
     \label{fig:throughput_combined}
 \end{figure}
 
 In the end, we did not use \gls{remd} for the final data generation, as the computational overhead of running multiple replicas does not justify the improved sampling.
+
+
+\subsection{Solvent Scaling with Sequence Length}
 
 Because a fixed margin of water must surround the peptide in all three dimensions to avoid boundary artifacts, the total volume and therefore the number of solvent atoms scales cubically ($\mathcal{O}(L^3)$) with the sequence length $L$. This rapid addition of solvent atoms makes large-scale simulations of long peptides slow (Figure \ref{fig:system_scaling}).
 
