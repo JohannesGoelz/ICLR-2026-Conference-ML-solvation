@@ -7,22 +7,13 @@
 % Motivation
 Understanding molecular behavior at the atomistic scale is essential for applications such as drug discovery and materials design. Designing a molecule for a specific function, for example, binding to a target protein or maximizing light absorption in photovoltaic devices, requires knowledge of how that molecule adopts different conformations in its target environment \citep{de2016role, jorgensen2004many, hachmann2011harvard, scharber2006design}. 
 
-
-
 This, in turn, necessitates sampling from the Boltzmann distribution, where the probability of observing a configuration $\mathbf{r} \in \mathbb{R}^{3N}$ is proportional to $\tilde{\mu}(\mathbf{r}) = \exp\left(\frac{-E(\mathbf{r})}{k_B T}\right)$, with $E(\mathbf{r})$ the potential energy, $T$ the temperature, and $k_B$ the Boltzmann constant \citep{schopmans2026efficient}. The normalized distribution $\mu(\mathbf{r}) = \tilde{\mu}(\mathbf{r})/Z$ involves the partition function $Z$, which is generally unknown and intractable. A classical approach to sampling from this distribution is \gls{md}, which propagates atomic positions through time according to Newton's equations of motion, thereby generating configurations distributed according to the Boltzmann distribution \citep{karplus2002molecular, hollingsworth2018molecular}.
 
 
 % Drawbacks of current methods
 In this context, solvent effects play a decisive role. In biomolecular systems, for instance, water is the predominant medium and strongly influences conformational sampling through hydrogen bonding, dielectric screening, and hydrophobic interactions. More generally, the inclusion of solvents can yield Boltzmann distributions that differ from those obtained in vacuum settings, underscoring the importance of accurately accounting for solvation effects across diverse domains. 
 
-However, simulating a single target molecule, such as a drug candidate, in an explicit water box containing thousands of solvent molecules (Figure \ref{fig:solvated_alanine}) comes with high computational cost \citep{roux1999implicit, feig2004performance}. Classical implicit solvent models, such as the \gls{gb} approximation, mitigate this by eliminating explicit solvent degrees of freedom \citep{still1990semianalytical, Onufriev2019-yz}. While computationally efficient, these models often sacrifice accuracy relative to fully atomistic systems.
-
-\begin{figure}
-    \centering
-    \includegraphics[width=0.5\linewidth]{images/solvated_alanine.png}
-    \caption{Alanine dipeptide (22 atoms) solvated in an explicit water environment. The cubic simulation box has a padding of 2,nm and contains 696 solvent atoms, demonstrating the disproportionately high number of solvent degrees of freedom that drive up the computational cost of fully atomistic simulations}
-    \label{fig:solvated_alanine}
-\end{figure}
+However, simulating a single target molecule, such as a drug candidate, in an explicit water box containing thousands of solvent molecules (Appendix \ref{subsec:sequence_length}) comes with high computational cost \citep{roux1999implicit, feig2004performance}. Classical implicit solvent models, such as the \gls{gb} approximation, mitigate this by eliminating explicit solvent degrees of freedom \citep{still1990semianalytical, Onufriev2019-yz}. While computationally efficient, these models often sacrifice accuracy relative to fully atomistic systems.
 
 % contribution
 

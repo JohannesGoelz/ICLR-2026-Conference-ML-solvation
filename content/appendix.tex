@@ -2,6 +2,24 @@
 
 
 
+\subsection{Reproduction of Results found by \cite{machine_learning_implicit_solvation}}
+\label{subsec:appendix_reproduction_alanine}
+
+%TODO add KL divergence
+
+To verify that our implementation reproduces the behavior reported in \citet{machine_learning_implicit_solvation}, we additionally trained our model on the capped alanine dipeptide system and compared the resulting free-energy landscape against the explicit-solvent reference. Qualitatively, we observe the same dominant basins and a similar thermodynamic profile as reported in the reference work.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.95\linewidth]{images/ala_dipeptid_pmf_combined.png}
+
+    \caption{Free-energy landscapes of capped alanine dipeptide in the $(\phi, \psi)$ dihedral space obtained under four solvent treatments: explicit solvent, ML implicit solvation \citep{machine_learning_implicit_solvation}, Generalized Born, and vacuum. Darker regions indicate higher probability density.}
+
+
+    \label{fig:appendix_reproduction_alanine_placeholder}
+\end{figure}
+
+
 \subsection{Computational Efficiency}
 \label{subsec:throughput}
 
@@ -28,6 +46,7 @@ In the end, we did not use \gls{remd} for the final data generation, as the comp
 
 
 \subsection{Solvent Scaling with Sequence Length}
+\label{subsec:sequence_length}
 
 Because a fixed margin of water must surround the peptide in all three dimensions to avoid boundary artifacts, the total volume and therefore the number of solvent atoms scales cubically ($\mathcal{O}(L^3)$) with the sequence length $L$. This rapid addition of solvent atoms makes large-scale simulations of long peptides slow (Figure \ref{fig:system_scaling}).
 
@@ -37,7 +56,6 @@ Because a fixed margin of water must surround the peptide in all three dimension
     \caption{Number of explicitly solvated atoms (TIP3P with 1.2\,nm padding) plotted against sequence length for random combinations of 20 standard amino acids. A nonlinear increase in system size naturally emerges to encapsulate the expanding spatial volume of longer chains.}
     \label{fig:system_scaling}
 \end{figure}
-
 
 \subsection{Dataset Distributions}
 
@@ -61,3 +79,16 @@ Figure \ref{fig:tetrapeptide_kinetics_thermo} extends this analysis to four tetr
     \label{fig:tetrapeptide_kinetics_thermo}
 \end{figure*}
 
+\subsection{Solvated vs. Vacuum Conformational Landscapes for Tetrapeptides}
+\label{subsec:appendix_fhwn_solvated_vs_vacuum}
+
+To illustrate the impact of solvent on conformational sampling, we ran a 1\,\textmu s simulation of the tetrapeptide FHWN in two settings: (i) explicit TIP3P water and (ii) vacuum. Figure~\ref{fig:fhwn_solvated_vs_vacuum} compares the resulting thermodynamic and kinetic projections. The explicit-solvent simulation explores broader and more structured regions of conformational space, whereas the vacuum simulation collapses into fewer dominant basins.
+
+
+\begin{figure*}[htbp]
+    \centering
+    % TODO: replace with your final file path
+    \includegraphics[width=\linewidth]{images/tetrapeptide_vacuum.png}
+    \caption{Conformational comparison for FHWN over 1\,\textmu s in explicit water (top row) and vacuum (bottom row). Left: Ramachandran PMFs for the residue pairs F--H, H--W, and W--N. Right: corresponding \gls{tica} projection (TIC 0 vs TIC 1). The solvent model induces different thermodynamic basins and kinetic organization than vacuum dynamics.}
+    \label{fig:fhwn_solvated_vs_vacuum}
+\end{figure*}
