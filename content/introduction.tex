@@ -5,9 +5,11 @@
 
 
 % Motivation
-Understanding molecular behavior at the atomistic scale is essential for applications such as drug discovery and materials design. Designing a molecule for a specific function, for example, binding to a target protein or maximizing light absorption in photovoltaic devices, requires knowledge of how that molecule adopts different conformations in its target environment \citep{de2016role, jorgensen2004many, hachmann2011harvard, scharber2006design}. 
+Understanding molecular behavior at the atomistic scale is essential for applications such as drug discovery and materials design. Designing a molecule for a specific function, for example, binding to a target protein or achieving desired electronic properties in organic semiconductors, requires knowledge of how that molecule adopts different conformations in its target environment \citep{de2016role, jorgensen2004many, hachmann2011harvard}.
 
-This, in turn, necessitates sampling from the Boltzmann distribution, where the probability of observing a configuration $\mathbf{r} \in \mathbb{R}^{3N}$ is proportional to $\tilde{\mu}(\mathbf{r}) = \exp\left(\frac{-E(\mathbf{r})}{k_B T}\right)$, with $E(\mathbf{r})$ the potential energy, $T$ the temperature, and $k_B$ the Boltzmann constant \citep{schopmans2026efficient}. The normalized distribution $\mu(\mathbf{r}) = \tilde{\mu}(\mathbf{r})/Z$ involves the partition function $Z$, which is generally unknown and intractable. A classical approach to sampling from this distribution is \gls{md}, which propagates atomic positions through time according to Newton's equations of motion, thereby generating configurations distributed according to the Boltzmann distribution \citep{karplus2002molecular, hollingsworth2018molecular}.
+
+
+This, in turn, necessitates sampling from the Boltzmann distribution, where the probability of observing a configuration $\mathbf{r} \in \mathbb{R}^{3N}$ is proportional to $\tilde{\mu}(\mathbf{r}) = \exp\left(\frac{-E(\mathbf{r})}{k_B T}\right)$, with $E(\mathbf{r})$ the potential energy, $T$ the temperature, and $k_B$ the Boltzmann constant \citep{frenkel2023understanding}. The normalized distribution $\mu(\mathbf{r}) = \tilde{\mu}(\mathbf{r})/Z$ involves the partition function $Z$, which is generally unknown and intractable. A classical approach to sampling from this distribution is \gls{md}, which propagates atomic positions through time according to Newton's equations of motion, thereby generating configurations distributed according to the Boltzmann distribution \citep{karplus2002molecular, hollingsworth2018molecular}.
 
 
 % Drawbacks of current methods
@@ -20,13 +22,9 @@ However, simulating a single target molecule, such as a drug candidate, in an ex
 To address this limitation, we introduce a machine learning based approach that learns the effect of explicit solvation on molecular forces. The model builds on SchNet \citep{schutt2018schnet} and is trained via force matching on trajectories generated in explicit solvent using classical force fields. During data generation, atomic forces are recorded at each simulation step, and the model is subsequently trained via supervised learning on these force trajectories. A closely related approach was proposed by \citet{machine_learning_implicit_solvation} for the alanine dipeptide system. We extend this line of work to a broader set of peptides and show a systematic evaluation of relevant model design choices.
 
 We summarize our contributions as follows:
-
 \begin{itemize}
-    \item We generate a dataset of force trajectories for dipeptides and
-    tetrapeptides, each including an extended equilibration phase and a large
-    number of recorded samples per trajectory.
-    \item We train a \gls{ml} model based on a \gls{gnn} on the dipeptide 
-    dataset and evaluate the impact of key design choices, including the choice 
-    of atomic embeddings and the effect of training set trajectory length on 
-    model performance.
+    \item \textbf{Large-Scale Force Trajectory Dataset:} We generate an extensive dataset of force trajectories for 400 dipeptides and 1,530 tetrapeptides, featuring extended equilibration phases and a large number of recorded samples per trajectory to capture complex solvent-solute interactions.
+    \item \textbf{Outperforming Classical Baselines:} We demonstrate that \glspl{gnn} using topological and sequence-aware representations surpass the \gls{gb} baseline across both in-distribution and out-of-distribution metrics, establishing a new standard for implicit solvation accuracy.
+    \item \textbf{Systematic Evaluation of Design Choices:} We evaluate the impact of atomic embeddings and show that while elemental types struggle to generalize, sequence-aware embeddings are critical for robust transferability. 
+    \item \textbf{Data Efficiency:} We show that models trained on trajectories as short as 5 ns achieve thermodynamic fidelity on par with 500 ns simulations, effectively reducing the computational cost of data generation by two orders of magnitude.
 \end{itemize}

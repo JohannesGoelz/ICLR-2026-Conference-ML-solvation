@@ -1,8 +1,6 @@
-\section{Appendix}
+\appendix
 
-
-
-\subsection{Reproduction of Results found by \cite{machine_learning_implicit_solvation}}
+\section{Reproduction of Results found by \texorpdfstring{\cite{machine_learning_implicit_solvation}}{Chen et al.}}
 \label{subsec:appendix_reproduction_alanine}
 
 %TODO add KL divergence
@@ -20,7 +18,7 @@ To verify that our implementation reproduces the behavior reported in \citet{mac
 \end{figure}
 
 
-\subsection{Computational Efficiency}
+\section{Computational Efficiency}
 \label{subsec:throughput}
 
 To evaluate the computational efficiency of our data generation pipeline, we measured the throughput using a model system consisting of an uncapped tetra-alanine peptide (AAAA). 
@@ -92,3 +90,23 @@ To illustrate the impact of solvent on conformational sampling, we ran a 1\,\tex
     \caption{Conformational comparison of FVYA from 5\,\textmu s simulations in explicit water (\textbf{top row}), with Generalized Born implicit solvent (\textbf{center row}), and in vacuum (\textbf{bottom row}). Left: Ramachandran PMFs for the residue pairs F--V, V--Y, and Y--A. Right: corresponding \gls{tica} projection (TIC\,0 vs.\ TIC\,1). The choice of solvent model leads to distinct thermodynamic basins and kinetic organization of the peptide.}
     \label{fig:fvya_solvated_vs_vacuum}
 \end{figure*}
+
+
+\section{Evaluation of Alternative Dataset Architectures}
+\label{sec:appendix_dataset_architectures}
+
+Prior to adopting the sharded \texttt{.npy} architecture detailed in the main text, we evaluated several standard data-loading paradigms. These approaches ultimately proved inadequate for our specific constraints---namely, out-of-core dataset sizes and highly concurrent distributed training. We detail these iterative attempts and their failure modes below.
+
+\paragraph{1. PyTorch Native Workers with Global Shuffle}
+Our initial baseline utilized PyTorch's native \texttt{DataLoader} workers coupled with a standard global shuffle. This approach resulted in severe disk I/O bottlenecks. In this context, the primary performance barrier is the disk-to-RAM transfer bandwidth, rather than L1/L2/L3 CPU cache hierarchies. Global shuffling induces scattered, randomized disk reads, completely negating spatial locality. Ideally, once a data page is loaded into system memory (RAM), subsequent samples from that page result in fast memory hits. However, because our dataset significantly exceeds available RAM capacity, the global randomized access pattern led to severe page thrashing. ``Hot'' pages were continuously evicted from memory before their contents could be sufficiently utilized, resulting in a continuous loop of expensive disk fetches.
+
+\paragraph{2. SQLite-Backed Dataset}
+To manage the out-of-core data, we subsequently implemented a SQLite-backed relational database. While this approach conveniently abstracted away complexities related to tensor alignment and padding, it yielded poor overall training performance. The SQLite implementation suffered from the exact same page thrashing and poor cache locality as the naive PyTorch approach, further compounded by a significantly higher baseline memory overhead.
+
+\paragraph{3. LMDB with Custom Windowed Sampling}
+To explicitly leverage OS-level page caching, we transitioned to a Lightning Memory-Mapped Database (LMDB). To mitigate the severe thrashing observed in earlier attempts, we engineered a custom windowed sampler and memory manager. This system restricted dataset sampling to a localized ``window'' guaranteed to fit within the system's available RAM, ensuring that active pages remained hot.
+
+While this LMDB approach achieved near-optimal throughput for isolated, single-GPU training runs, it introduced a critical bottleneck during distributed hyperparameter sweeps. When multiple independent GPU jobs concurrently accessed the shared LMDB file, the resulting localized access patterns from different jobs severely fragmented disk I/O. This concurrent access crippled the underlying disk throughput, drastically slowing down training across the cluster.
+
+\paragraph{Conclusion}
+The sequential failure of these architectures to handle multi-GPU concurrency motivated the design of our final sharded \texttt{.npy} pipeline. By decoupling static metadata, parallelizing reads across randomized shards, and utilizing asynchronous prefetching, the final approach naturally mitigates concurrent I/O contention and scales seamlessly to clusters of 20 or more GPUs.

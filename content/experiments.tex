@@ -4,38 +4,165 @@
 
 \textbf{Dataset}
 
-The datasets utilized for training and evaluation are constructed from a total of 400 dipeptide systems. To assess generalization to novel molecular graphs, we strictly withhold a test set comprising 20\% of the dipeptides; these unseen systems are entirely excluded from the training phase. For the remaining 80\% of the dipeptides, we process raw Molecular Dynamics (MD) trajectories, each containing \num{2e6} frames. We partition these in-distribution trajectories chronologically: the first half (\num{e6} frames) forms the training set to optimize the main model, while the second half serves as the validation set to monitor in-distribution generalization. Following established protocols, we operate under the assumption that a trajectory length of \num{e6} frames provides a sufficiently robust approximation of the Boltzmann distribution for dipeptide systems \citep{machine_learning_implicit_solvation} (important: frames alone not sufficient. only half the traj length of issnet).
+The datasets utilized for training and evaluation are constructed from a total of 400 uncapped dipeptide systems. To assess generalization to novel molecular graphs, we strictly withhold a test set comprising 20\% of the dipeptides; these unseen systems are entirely excluded from the training phase. For the remaining 80\% of the dipeptides, we process raw \gls{md} trajectories, each containing \num{2e6} frames. We partition these in-distribution trajectories chronologically: the first 500ns (\num{e6} frames) forms the training set to optimize the main model, while the second half serves as the validation set to monitor in-distribution generalization.
 
 \textbf{Metrics}
 
-Prior work \citep{machine_learning_implicit_solvation} demonstrates that relying solely on static force prediction errors is insufficient for model selection, as the lowest mean squared error (MSE) on atomic forces does not strictly correlate with the best approximation of the target Boltzmann distribution. To rigorously evaluate the thermodynamic fidelity of the trained models, we conduct MD simulations using the framework detailed in Section \ref{sec:todo} \citep{ase_placeholder}, employing our models as surrogate calculators.
+Prior work \citep{machine_learning_implicit_solvation} demonstrates that relying solely on static force prediction errors is insufficient for model selection, as the lowest mean squared error (MSE) on atomic forces---here, calculated in $(\text{kJ} \cdot \text{mol}^{-1} \cdot \text{\AA}^{-1})^2$---does not strictly correlate with the best approximation of the target Boltzmann distribution. To rigorously evaluate the thermodynamic fidelity of the trained models, we conduct MD simulations using the framework detailed in Section \ref{subsec:simulation_framework}, employing our models as surrogate calculators.
 
 To ensure consistent comparisons, all baseline models and ablations are evaluated on the same randomly selected molecule from both the train and test sets. We execute 256 parallel MD replicas utilizing our simulation framework. Following \citet{machine_learning_implicit_solvation}, we initialize these parallel simulations by randomly sampling starting conformations from the all-atom ground-truth data of the respective system. This informed initialization facilitates a brief equilibration phase of 0.1 ns per replica. Subsequent production runs of 1 ns per replica aggregate to 256 ns of total effective simulation time, yielding \num{2.56e6} extracted frames.
 
-To maintain parity across evaluations, both the model-generated and ground-truth trajectories are uniformly subsampled to \num{e6} frames. We then project these structural ensembles onto relevant low-dimensional collective variables—specifically, Ramachandran dihedral angles and \gls{tica} coordinates. Finally, we compute the \gls{kl} divergence and the Wasserstein distance between the predicted and ground-truth marginal distributions on these projections. These metrics provide a robust, quantitative measure of how closely the simulated ensembles approximate the true target Boltzmann distribution.
+To maintain parity across evaluations, both the model-generated and ground-truth trajectories are uniformly subsampled to \num{e6} frames. We then project these structural ensembles onto relevant low-dimensional collective variables—specifically, Ramachandran dihedral angles. Finally, we compute the \gls{kld} between the predicted and ground-truth marginal distributions on these projections. These metrics provide a robust, quantitative measure of how closely the simulated ensembles approximate the true target Boltzmann distribution.
+
+
+\subsection{Feature Embedding Ablation}
+\label{subsec:feature_embedding_ablation}
+
+As noted by \citet{klein_transferable_2024} and \citet{machine_learning_implicit_solvation}, the initial features selected for atomistic embeddings are primary determinants of downstream model performance. To systematically evaluate this effect, we conduct a feature embedding ablation study utilizing the flexible embedding framework detailed in Subsection \ref{subsec:modular_embeddings}. Specifically, we evaluate three distinct embedding strategies of varying complexity:
+
+\begin{enumerate}
+    \item \textit{atom type:} A baseline categorical encoding restricted to the five fundamental element types present in our dataset (H, C, N, O, S).
+    \item \textit{FF atom type + R:} Adopted from the TBG + full embedding scheme proposed by \citet{klein_transferable_2024}, this strategy combines 54 topological force field atom classes, 20 amino acid classes, and discrete sequence positions.
+    \item \textit{partial charges:} Inspired by the q-ISSNet architecture \citep{machine_learning_implicit_solvation}, this embedding integrates continuous atomic partial charges.
+\end{enumerate}
+
+To ensure a fair comparison and isolate the impact of the initial representations, all models share an identical backbone complexity. We utilize 3 interaction blocks and a hidden dimension of 32 in our model.
+
+\textbf{Results} To establish a rigorous reference point for our learned representations, we first compare their thermodynamic fidelity against a standard generalized Born (GB) implicit solvent baseline (Table \ref{tab:embedding_ablation}). We find that the rudimentary \textit{atom type} model fails to even approach the accuracy of the GB baseline. This is primarily because elemental types alone fail to distinguish between distinct chemical contexts—treating a backbone carbon identically to a side-chain carbon—which severely limits the model's representational capacity. This limitation is visually evident in the Ramachandran free energy landscapes (Figure \ref{fig:ramachandran_grid}). For the out-of-distribution AA dipeptide, the atom type representation erroneously oversamples both the top-left and bottom-right modes. Furthermore, for the in-distribution CI dipeptide, it fails to capture the broader conformational landscape on the left (negative $\phi$) and heavily oversamples the rare bottom-right state.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1\linewidth]{images/ramachandran_pmf_grid.pdf}
+    \caption{Ramachandran distributions ($\phi$ vs. $\psi$) comparing the Ground Truth against various embedding strategies and the Generalized Born (GB) baseline. Top row evaluates the out-of-distribution test dipeptide (AA), while the bottom row evaluates the in-distribution validation dipeptide (CI). The \textit{FF Atom Type + R} embedding yields conformational landscapes that most closely mirror the Ground Truth, whereas simpler representations exhibit distinct sampling biases.}
+    \label{fig:ramachandran_grid}
+\end{figure}
+
+In contrast, incorporating continuous partial charges significantly improves the approximation of the underlying Boltzmann distribution—a finding that corroborates the results of \citet{machine_learning_implicit_solvation}. While this \textit{partial charge} model outperforms the GB baseline on the in-distribution validation set (achieving a KLD of 0.0939 versus 0.1725), it struggles to generalize to novel molecular graphs. On the out-of-distribution test set, the partial charge model yields a KLD of 0.1822, falling behind the GB baseline's 0.1289. This discrepancy highlights a critical limitation in the transferability of continuous partial charge representations when faced with unseen topologies. As observed in Figure \ref{fig:ramachandran_grid}, while this model captures the overall topology better than the baseline, it exhibits a distinct bias toward the left-hand modes for both dipeptides and artificially oversamples the bottom-right region, driving up the KLD on the test set.
+
+To address this, we provide what is, to the best of our knowledge, the first direct comparison between the optimal embeddings proposed by \citet{machine_learning_implicit_solvation} and \citet{klein_transferable_2024}. Our results demonstrate that the topological and sequence-aware \textit{FF atom type + R} representation surpasses the continuous partial charge model across all metrics. This embedding not only outperforms the GB baseline on both in- and out-of-distribution datasets but also exhibits remarkable stability; notably, the KLD for the test set dipeptide AA drops below the training set dipeptide CI. This explicitly underscores the robust, highly transferable nature of the \textit{FF atom type + R} scheme compared to traditional continuous descriptors. The Ramachandran plots corroborate this quantitative performance: the \textit{FF atom type + R} landscapes closely mirror the Ground Truth distributions for both systems. While a slight undersampling of the minor bottom-right mode is observed for AA, we attribute this to finite simulation length rather than a fundamental deficiency in the embedding.
+
+Finally, we address the observation by \citet{machine_learning_implicit_solvation} that lower force prediction errors do not necessarily guarantee improved conformational sampling, as measured here by the KLD. Interestingly, Figure \ref{fig:ablation_embedding_correlation} reveals a strong positive correlation between Force MSE and KLD across our different embedding strategies. This behavior is explained by the scale of error: because the initial embedding dictates the model's fundamental representational capacity, inadequate representations (such as the baseline atom type) yield massive force prediction penalties. At these magnitudes, a severely degraded force prediction inherently precludes accurate Boltzmann sampling. Therefore, while MSE and KLD may decouple during fine-grained optimization, catastrophic force errors driven by architectural limitations translate directly to poor sampling performance.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=1\linewidth]{images/ablation_scatter_embedding.pdf}
+    \caption{Correlation between thermodynamic fidelity (KLD) and static force prediction error (MSE) across the embedding ablations for the out-of-distribution (AA, left) and in-distribution (CI, right) dipeptides. The strong positive correlation ($r \ge 0.96$) indicates that inadequate feature representations (e.g., basic atom types) result in catastrophic force errors that inherently preclude accurate Boltzmann sampling.}
+    \label{fig:ablation_embedding_correlation}
+\end{figure}
+
+
+\begin{table}[htbp]
+\centering
+\caption{Evaluation results for the feature embedding ablation study. The table compares the predictive accuracy (Force MSE) and thermodynamic fidelity (KLD of the Ramachandran marginal distributions) across three distinct embedding strategies: a baseline element \textit{atom type}, continuous \textit{partial charges}, and the topological \textit{FF atom type + R} scheme. Metrics include the average force MSE across all dipeptides in the validation and test sets, as well as per-dipeptide force MSE and KLD for the in-distribution validation dipeptide (CI) and the out-of-distribution test dipeptide (AA). The \gls{gb} row denotes the physics-based \gls{gb} baseline. Best results are highlighted in bold.}
+\label{tab:embedding_ablation}
+\begin{tabular}{l r r r r r r}
+\toprule
+& \multicolumn{3}{c}{Validation} & \multicolumn{3}{c}{Test} \\
+\cmidrule(lr){2-4} \cmidrule(lr){5-7}
+System & All & \multicolumn{2}{c}{CI} & All & \multicolumn{2}{c}{AA} \\
+\cmidrule(lr){3-4} \cmidrule(lr){6-7}
+Embedding type & MSE & MSE & KLD & MSE & MSE & KLD \\
+\midrule
+\gls{gb} & -- & -- & 0.1725 & -- & -- & 0.1289 \\
+\midrule
+atom type & 146.9162 & 103.1950 & 0.7191 & 158.4477 & 131.2966 & 0.9558 \\
+partial charges & 140.9449 & 98.8341 & 0.0939 & 146.4802 & 129.9033 & 0.1822 \\
+FF atom type + R & \textbf{134.4312} & \textbf{98.0609} & \textbf{0.0565} & \textbf{139.7957} & \textbf{128.8489} & \textbf{0.0165} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+\subsection{Training Trajectory Length Ablation}
+
+To isolate the effect of trajectory length on model performance, we truncate the training data to the first $n$ samples. Because the trajectories were logged sequentially during simulation, this truncation faithfully emulates training on shorter physical simulation times. 
+
+To control for the confounding variable of dataset size—given that longer trajectories naturally contain more frames—we systematically subsample each truncated slice to match the total frame count of the shortest trajectory under investigation. This rigorous matching ensures that our ablation strictly assesses the quality of the thermodynamic sampling. Specifically, it tests the hypothesis that subsampling a longer, more decorrelated trajectory yields better statistical convergence and a superior representation of the underlying Boltzmann distribution.
+
+Consistent with our previous findings, all models in this ablation study share an identical architecture, utilizing the top-performing \textit{FF atom type + R} embedding, 3 interaction blocks, and a hidden dimension of 32. The ablation datasets were constructed by truncating the trajectories to the initial 5, 25, 250, and 500 ns of simulation time. To independently evaluate the effect of total sample size, we systematically downsampled these truncated trajectories to either 10,000 or 50,000 frames per molecule.
+
+
+\textbf{Results} Table \ref{tab:dataset_ablation} presents the outcomes of the trajectory length ablation. Notably, while the 500 ns simulation downsampled to 50,000 frames per molecule achieves the lowest mean squared error (MSE) on the validation set (for both CI and AA), it does not yield the best \gls{kld} for these dipeptides. This explicitly confirms the previously discussed phenomenon \citep{machine_learning_implicit_solvation} that lower force prediction errors do not necessarily guarantee improved accuracy in recovering the underlying conformational distributions. 
+
+Unlike the macro-level correlations observed during the embedding ablation, Figure \ref{fig:dataset_ablation_correlation} illustrates this decoupling. The scatter plots demonstrate a weak correlation ($r = -0.41$ for AA and $r = 0.32$ for CI) between Force MSE and KLD. This indicates that once force errors are minimized to a certain threshold within a highly optimized architecture, they decouple from the quality of the structural sampling. Consequently, this underscores the necessity of explicitly evaluating a model's capacity to sample the Boltzmann distribution accurately, rather than relying solely on static force evaluation metrics.
+
+The lowest overall KLD across both dipeptides was achieved using the 250 ns simulation downsampled to 10,000 frames per molecule. Interestingly, the highly truncated 5 ns simulation (downsampled to 10,000 frames) demonstrates remarkably strong performance. It achieves a lower KLD on the test dipeptide (AA) than both 500 ns datasets, outperforms the 500 ns dataset (10,000 frames) on the training dipeptide (CI), and performs nearly as well as the 500 ns dataset with 50,000 frames. This finding is of significant practical value, as generating the 5 ns dataset is two orders of magnitude computationally cheaper than simulating the full 500 ns trajectory.
+
+
+\begin{table}[htbp]
+\centering
+\caption{Evaluation results for the training trajectory length ablation. Models sharing an identical architecture were trained on datasets truncated to initial physical simulation times ranging from 5 ns to 500 ns. To control for total dataset size, trajectories were uniformly downsampled to either 10,000 ($N=10$k) or 50,000 ($N=50$k) frames per molecule. Performance is evaluated via Force MSE and KLD on both validation (CI) and test (AA) sets to assess the decoupling of static force errors from dynamic sampling quality. Metrics include the average force MSE across all dipeptides in the validation and test sets, as well as per-dipeptide force MSE and KLD for the in-distribution validation dipeptide (CI) and the out-of-distribution test dipeptide (AA). The \gls{gb} row denotes the physics-based \gls{gb} baseline. Best results are highlighted in bold.}
+\label{tab:dataset_ablation}
+\begin{tabular}{l r r r r r r}
+\toprule
+& \multicolumn{3}{c}{Validation} & \multicolumn{3}{c}{Test} \\
+\cmidrule(lr){2-4} \cmidrule(lr){5-7}
+System & All & \multicolumn{2}{c}{CI} & All & \multicolumn{2}{c}{AA} \\
+\cmidrule(lr){3-4} \cmidrule(lr){6-7}
+Dataset & MSE & MSE & KLD & MSE & MSE & KLD \\
+\midrule
+\gls{gb} & -- & -- & 0.1725 & -- & -- & 0.1289 \\
+\midrule
+5ns ($N=10$k) & 134.7448 & 98.0981 & 0.0646 & 140.9330 & 128.8822 & 0.0232 \\
+\midrule
+25ns ($N=10$k) & 134.2581 & 98.0832 & 0.0449 & 139.5614 & 128.9024 & 0.0504 \\
+25ns ($N=50$k) & 134.2194 & 98.1743 & 0.0417 & 139.6091 & 128.8563 & 0.0629 \\
+\midrule
+250ns ($N=10$k) & 134.3055 & 98.1181 & \textbf{0.0348} & 146.8484 & 128.9817 & \textbf{0.0208} \\
+250ns ($N=50$k) & 134.2064 & 98.1682 & 0.1026 & \textbf{139.2199} & 128.9768 & 0.0388 \\
+\midrule
+500ns ($N=10$k) & 134.2200 & 98.1280 & 0.0955 & 139.5267 & 128.8716 & 0.0915 \\
+500ns ($N=50$k) & \textbf{134.1918} & \textbf{98.0748} & 0.0582 & 140.8653 & \textbf{128.8173} & 0.0400 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+
+
+
+
+\begin{figure}
+    \centering
+    \includegraphics[width=1\linewidth]{images/ablation_scatter_dataset.pdf}
+    \caption{Correlation between thermodynamic fidelity (KLD) and static force prediction error (MSE) across different training trajectory lengths and sample sizes. In contrast to the embedding ablation, there is a weak or negative correlation ($r = -0.41$ for AA; $r = 0.32$ for CI). This demonstrates that once force errors are sufficiently minimized within an optimized architecture, static force accuracy decouples from dynamic sampling quality, underscoring the necessity of explicit thermodynamic metrics for model selection.}
+    \label{fig:dataset_ablation_correlation}
+\end{figure}
 
 \subsection{Model Complexity Ablation}
 
-We evaluate the impact of model capacity through a targeted ablation study across three representative scales of network complexity, detailed in Table \ref{tab:model_params}. This focused approach is motivated by prior work \citep{machine_learning_implicit_solvation}, which demonstrated that the force prediction accuracy of similar architectures is generally robust to structural hyperparameters, with performance being overwhelmingly dictated by the chosen atomic embeddings. Our empirical results corroborate this observation; scaling the architecture from a compact baseline ($\approx$ 97k parameters) to a highly parameterized network ($\approx$ 5M parameters) yielded no significant performance differences in either static force prediction (MSE) or dynamic thermodynamic fidelity (KLD). 
+We evaluate the impact of model capacity on force prediction accuracy and thermodynamic fidelity through a targeted ablation across three representative scales of network complexity. This focused approach is motivated by prior work \citep{machine_learning_implicit_solvation}, which demonstrated that the force prediction accuracy of similar architectures is generally robust to structural hyperparameters, with performance being overwhelmingly dictated by the chosen atomic embeddings. Accordingly, all models employ the top-performing \textit{FF atom type + R} embedding identified in the feature embedding ablation. We vary the SchNet hidden dimension ($h_{\text{dim}}$) and the number of interaction blocks to define three configurations:
 
-\begin{table}[h]
-    \centering
-    \caption{Representative model configurations used for our complexity ablation. The chosen architectures scale the hidden dimension ($h_{\text{dim}}$) and number of interaction blocks to evaluate capacity constraints, following \citep{machine_learning_implicit_solvation}. We used the \textit{TBG + full} embedding scheme, whose contribution to the total parameter size is negligible ($<$0.4\%).}
-    \label{tab:model_params}
-    \begin{tabular}{rrr}
-        \toprule
-        Hidden Dimension ($h_{\text{dim}}$) & Interaction Blocks & Total Parameters \\
-        \midrule
-        32 & 3 & 97,185 \\
-        128 & 7 & 530,689 \\
-        512 & 11 & 5,011,073 \\
-        \bottomrule
-    \end{tabular}
+\begin{enumerate}
+    \item \textbf{Model S:} $h_{\text{dim}}=32$, 3 interaction blocks ($\approx$97k parameters). This configuration is identical to the model used in the embedding ablation for the \textit{FF atom type + R} scheme.
+    \item \textbf{Model M:} $h_{\text{dim}}=128$, 7 interaction blocks ($\approx$531k parameters).
+    \item \textbf{Model L:} $h_{\text{dim}}=512$, 11 interaction blocks ($\approx$5M parameters).
+\end{enumerate}
+
+\textbf{Results}  Table \ref{tab:complexity_ablation} presents the outcomes of the model complexity ablation. Our empirical results broadly corroborate the observation of \citet{machine_learning_implicit_solvation} that performance is relatively insensitive to architectural scale compared to embedding choice. While Model M---approximately $5\times$ larger than Model S---achieves lower force MSE across all evaluation sets, the relative improvements are notably smaller than those observed between embedding strategies in the preceding ablation. Model M also attains the best KLD on the in-distribution dipeptide CI (0.0201 versus 0.0565), yet exhibits a higher KLD on the out-of-distribution dipeptide AA (0.0359 versus 0.0165). This divergence suggests that the increased capacity of Model M enables a tighter fit to the in-distribution data at the cost of slightly reduced generalization to unseen molecular topologies.
+
+Model L, which represents a further $\approx$$10\times$ increase in parameters over Model M, does not continue this trend of diminishing returns but instead exhibits clear signs of training instability. Its average force MSE on both the validation and test sets is an order of magnitude higher than the smaller models (1357.33 and 1633.82, respectively), indicating a failure to converge to a globally useful solution. Notably, however, Model L achieves the lowest per-molecule force MSE on the test dipeptide AA (119.98), revealing substantial per-molecule variance in prediction quality. This striking discrepancy---where a model with catastrophic average errors nonetheless achieves competitive per-molecule performance---highlights the heterogeneous nature of the error landscape across different molecular topologies.
+
+The behavior of Model L further corroborates the decoupling between force prediction accuracy and thermodynamic fidelity observed in the trajectory length ablation. Despite its severely degraded average force MSE, Model L achieves a KLD of 0.0303 on the out-of-distribution dipeptide AA---competitive with Model M and well below the GB baseline. This stands in contrast to the embedding ablation, where catastrophic force errors translated directly to poor sampling performance. Furthermore, although Model L attains the lowest per-molecule force MSE on AA across all three configurations (119.98, compared to 128.85 for Model S and 128.60 for Model M), it does not yield a superior KLD relative to Model S. This reinforces the necessity of evaluating models through explicit MD simulations rather than relying solely on static force prediction metrics to assess thermodynamic fidelity.
+
+\begin{table}[htbp]
+\centering
+\caption{Evaluation results for the model complexity ablation study. The table compares the predictive accuracy (Force MSE) and thermodynamic fidelity (KLD of the Ramachandran marginal distributions) across three representative architecture scales, varying the SchNet hidden dimension ($h_{\text{dim}}$) and number of SchNet interaction blocks: S ($h_{\text{dim}}=32$, 3 blocks, $\approx$97k params), M ($h_{\text{dim}}=128$, 7 blocks, $\approx$531k params), L ($h_{\text{dim}}=512$, 11 blocks, $\approx$5M params). Metrics include the average force MSE across all dipeptides in the validation and test sets, as well as per-dipeptide force MSE and KLD for the in-distribution validation dipeptide (CI) and the out-of-distribution test dipeptide (AA). The \gls{gb} row denotes the physics-based \gls{gb} baseline. Best results are highlighted in bold.}
+\label{tab:complexity_ablation}
+\begin{tabular}{l r r r r r r}
+\toprule
+& \multicolumn{3}{c}{Validation} & \multicolumn{3}{c}{Test} \\
+\cmidrule(lr){2-4} \cmidrule(lr){5-7}
+System & All & \multicolumn{2}{c}{CI} & All & \multicolumn{2}{c}{AA} \\
+\cmidrule(lr){3-4} \cmidrule(lr){6-7}
+Model & MSE & MSE & KLD & MSE & MSE & KLD \\
+\midrule
+\gls{gb} & -- & -- & 0.1725 & -- & -- & 0.1289 \\
+\midrule
+S & 134.4312 & 98.0609 & 0.0565 & 139.7957 & 128.8489 & \textbf{0.0165} \\
+M & \textbf{132.1340} & \textbf{97.7311} & \textbf{0.0201} & \textbf{136.6168} & 128.6021 & 0.0359 \\
+L & 1357.3301 & 306.0884 & 6.2951 & 1633.8196 & \textbf{119.9819} & 0.0303 \\
+\bottomrule
+\end{tabular}
 \end{table}
 
-\subsection{Feature Embedding Ablation}
-
-
-\subsection{Train Trajectory Length Ablation}
-
-To ablate the effect of trajectory length on model performance, we slice the first $n$ samples of the trajectory. Because the trajectories were logged sequentially during simulation, this approach accurately simulates shorter physical trajectory lengths. To mitigate the confounding variable of dataset size—where longer trajectories inherently contain more training samples—we subsample each slice to match the frame count of the shortest trajectory length under investigation. This isolates the ablation to assess the quality of the thermodynamic sampling, as subsampling a longer, more decorrelated trajectory yields better statistical convergence with respect to the underlying Boltzmann distribution. This is further detailed in the discussion (todo ref this later).
